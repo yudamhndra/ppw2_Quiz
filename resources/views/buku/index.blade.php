@@ -15,6 +15,10 @@
                     {{ __('Buku Favoritku') }}
                 </a>
             @endauth
+
+            <a href="{{ route('buku.populer') }}" class="btn-secondary">
+                {{ __('Buku Populer') }}
+            </a>
         </div>
     </x-slot>
 

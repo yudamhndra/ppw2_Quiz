@@ -6,15 +6,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Models\Buku;  
 use App\Models\Gallery;
+use App\Models\Categories;
 use Intervention\Image\Facades\Image;
 use Illuminate\Support\Str;
 use App\Models\FavoriteBook;
+use App\Notifications\ProfanityDetectedNotification;
 
 class ControllerBuku extends Controller
 {
-
-
-    
     public function index(){
         $batas = 5;
         $jumlah_buku = Buku::count();
@@ -45,7 +44,9 @@ class ControllerBuku extends Controller
 
     public function create() {
         $buku = new Buku; 
-        return view('buku.create', compact('buku'));
+        $categories = Categories::all(); 
+
+        return view('buku.create', compact('buku', 'categories'));
     }
 
     public function store(Request $request) {
@@ -88,6 +89,19 @@ class ControllerBuku extends Controller
                 ]);
             }
         }
+
+        if (!empty($request->categories)) {
+            foreach ($request->categories as $category) {
+                if ($category == 'new') {
+                    $newCategory = Categories::firstOrCreate(['name' => $request->manual_category]);
+                    $buku->categories()->attach($newCategory->id, ['book_id' => $buku->id]);
+                } else {
+                    $buku->categories()->attach($category, ['book_id' => $buku->id]);
+                }
+            }
+        }
+        
+        
     
         return redirect('/buku')->with('pesan', 'Buku baru berhasil ditambahkan');
     }
@@ -172,21 +186,15 @@ class ControllerBuku extends Controller
         $buku = Buku::find($id);
         $currentRating = $buku->rating ?? 0;
         $currentCount = $buku->rating_count ?? 0;
-    
-        // Calculate new average rating
+
         $newRating = ($currentRating * $currentCount + $request->rating) / ($currentCount + 1);
-    
-        // Update book's rating and rating_count
+
         $buku->update([
             'rating' => $newRating,
             'rating_count' => $currentCount + 1,
         ]);
 
         return redirect()->back()->with('success', 'Rating submitted successfully');
-    
-        // return redirect()->route('galeri.buku', ['buku_seo' => $buku->buku_seo])->with('pesan', 'Rating submitted successfully');
-
-
     }
 
 
@@ -208,6 +216,30 @@ class ControllerBuku extends Controller
 
         return view('buku.my_favorites', compact('favoriteBooks'));
     }
+
+    public function bukuPopuler()
+    {
+        $bukuPopuler = Buku::orderByDesc('rating')->take(10)->get();
+
+        return view('buku.buku_populer', compact('bukuPopuler'));
+    }
+
+    public function submitReview(Request $request, $bukuId)
+{
+    $profanityFilter = ['kata1', 'kata2', 'kata3']; 
+    $review = str_replace($profanityFilter, '***', $request->input('review'));
+
+    Buku::find($bukuId)->update([
+        'review' => $review,
+        'moderation_status' => true,
+    ]);
+
+    if (str_contains($review, '***')) {
+        auth()->user()->notify(new ProfanityDetectedNotification);
+    }
+
+    return redirect()->back()->with('success', 'Review berhasil dikirim. Akan ditampilkan setelah dimoderasi.');
+}
 
     
 }

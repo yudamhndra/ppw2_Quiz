@@ -50,6 +50,22 @@
                         </script>
                     </div>
 
+                    <div class="mb-4">
+                        <label for="categories" class="block text-gray-600">Kategori</label>
+                        <select name="categories[]" id="categories" multiple class="border border-gray-300 rounded px-3 py-2 w-full">
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}">{{ $category->categories }}</option>
+                            @endforeach
+                            <option value="new">Tambah Kategori Baru</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4" id="manualCategoryInput" style="display: none;">
+                        <label for="manual_category" class="block text-gray-600">Kategori Baru</label>
+                        <input type="text" id="manual_category" name="manual_category" class="border border-gray-300 rounded px-3 py-2 w-full">
+                    </div>
+
+
                     <div class="col-span-full mt-6">
                         <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">Tambah Buku</button>
                         <a href="/buku" class="text-gray-600">Batal</a>
